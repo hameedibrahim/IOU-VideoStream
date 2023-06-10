@@ -5,20 +5,22 @@ import android.annotation.SuppressLint
 import android.app.PictureInPictureParams
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
+import android.content.res.Configuration
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.os.Build
 import android.os.Bundle
+import android.os.PersistableBundle
+import android.util.Rational
 import android.view.Gravity
-import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ImageView
 import android.widget.PopupMenu
-import android.widget.PopupWindow
 import android.widget.Toast
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.exoplayer2.ExoPlayer
@@ -29,7 +31,6 @@ import com.google.android.exoplayer2.source.hls.HlsMediaSource
 import com.google.android.exoplayer2.ui.StyledPlayerView
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSource
 import com.google.android.exoplayer2.util.Util
-import kotlinx.coroutines.flow.distinctUntilChanged
 
 
 class VideoViewActivity : AppCompatActivity(), Player.Listener{
@@ -46,8 +47,8 @@ class VideoViewActivity : AppCompatActivity(), Player.Listener{
     private lateinit var ivPlayBackMenu : ImageView
     private var isFullScreenMode: Boolean = false
     val speeds = arrayOf(0.25f, 0.5f, 0.75, 1f, 1.25, 1.5f, 2f)
-    private lateinit var connectivityObserver: ConnectivityObserver
-
+    private var isPlaying = false
+    private var isPictureMode = false
 
 
     @SuppressLint("MissingInflatedId")
@@ -63,38 +64,7 @@ class VideoViewActivity : AppCompatActivity(), Player.Listener{
         checkForNetwork()
     }
 
-    private fun checkForNetwork(){
-        val networkRequest = NetworkRequest.Builder()
-            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-            .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
-            .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
-            .build()
-        val connectivityManager = getSystemService(ConnectivityManager::class.java) as ConnectivityManager
-        connectivityManager.requestNetwork(networkRequest, networkCallback)
-    }
 
-
-    private val networkCallback = object : ConnectivityManager.NetworkCallback() {
-        // network is available for use
-        override fun onAvailable(network: Network) {
-            super.onAvailable(network)
-            Toast.makeText(this@VideoViewActivity, "Back to online:)", Toast.LENGTH_LONG).show()
-        }
-        // Network capabilities have changed for the network
-        override fun onCapabilitiesChanged(
-            network: Network,
-            networkCapabilities: NetworkCapabilities
-        ) {
-            super.onCapabilitiesChanged(network, networkCapabilities)
-            val unmetered = networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)
-        }
-        // lost network connection
-        override fun onLost(network: Network) {
-            super.onLost(network)
-            Toast.makeText(this@VideoViewActivity, "Connection Lost!!!", Toast.LENGTH_LONG).show()
-
-        }
-    }
 
 
     private fun clickListener(){
@@ -195,24 +165,7 @@ class VideoViewActivity : AppCompatActivity(), Player.Listener{
     }
 
 
-    @Suppress("DEPRECATION")
-    private fun enterPIPMode() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N
-            && packageManager
-                .hasSystemFeature(
-                    PackageManager.FEATURE_PICTURE_IN_PICTURE
-                )
-        ) {
-            playbackPosition = player!!.currentPosition
-            styledPlayerView.useController = false
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val params = PictureInPictureParams.Builder()
-                this.enterPictureInPictureMode(params.build())
-            } else {
-                this.enterPictureInPictureMode()
-            }
-        }
-    }
+
 
     private fun playbackSpeed(){
 
@@ -239,7 +192,8 @@ class VideoViewActivity : AppCompatActivity(), Player.Listener{
         popupMenu.menuInflater.inflate(R.menu.exo_menu, popupMenu.getMenu())
         popupMenu.setOnMenuItemClickListener { menuItem -> // Toast message on menu item clicked
             if (menuItem.title?.equals("PIP")!!){
-               enterPIPMode()
+              // enterPIPMode()
+                enterPiPMode()
             }else{
                 playbackSpeed()
             }
@@ -280,4 +234,83 @@ class VideoViewActivity : AppCompatActivity(), Player.Listener{
         super.onDestroy()
         releasePlayer()
     }
+
+
+    private fun checkForNetwork(){
+        val networkRequest = NetworkRequest.Builder()
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+            .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
+            .build()
+        val connectivityManager = getSystemService(ConnectivityManager::class.java) as ConnectivityManager
+        connectivityManager.requestNetwork(networkRequest, networkCallback)
+    }
+
+
+    private val networkCallback = object : ConnectivityManager.NetworkCallback() {
+        override fun onAvailable(network: Network) {
+            super.onAvailable(network)
+            Toast.makeText(this@VideoViewActivity, "Back to online:)", Toast.LENGTH_LONG).show()
+        }
+        override fun onCapabilitiesChanged(
+            network: Network,
+            networkCapabilities: NetworkCapabilities
+        ) {
+            super.onCapabilitiesChanged(network, networkCapabilities)
+        }
+        override fun onLost(network: Network) {
+            super.onLost(network)
+            Toast.makeText(this@VideoViewActivity, "Connection Lost!!!", Toast.LENGTH_LONG).show()
+
+        }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putLong("position", playbackPosition)
+    }
+
+    override fun onRestoreInstanceState(savedInstanceState: Bundle) {
+        super.onRestoreInstanceState(savedInstanceState)
+        playbackPosition = savedInstanceState.getLong("position",0)
+    }
+
+    private fun enterPiPMode() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                if (player!!.playWhenReady) {
+                    isPlaying = true
+                    playbackPosition = player!!.currentPosition
+                    player!!.playWhenReady = false
+                }
+                val aspectRatio = Rational(styledPlayerView.getWidth(), styledPlayerView.getHeight())
+                val params = PictureInPictureParams.Builder()
+                    .setAspectRatio(aspectRatio)
+                    .build()
+                enterPictureInPictureMode(params)
+            }
+        }
+    }
+
+    override fun onUserLeaveHint() {
+        if (!isPictureMode) {
+            enterPiPMode()
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    override fun onPictureInPictureModeChanged(
+        isInPictureInPictureMode: Boolean,
+        newConfig: Configuration
+    ) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig!!)
+        isPictureMode = isInPictureInPictureMode
+        if (isInPictureInPictureMode) {
+            // Hide any UI controls that are not needed in PiP mode
+
+        } else {
+            // Restore the UI controls when exiting PiP mode
+        }
+    }
+
 }

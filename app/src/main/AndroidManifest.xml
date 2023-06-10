@@ -20,7 +20,10 @@
             android:name=".VideoViewActivity"
             android:exported="false"
             android:supportsPictureInPicture="true"
-            android:configChanges="keyboardHidden|orientation|screenSize"/>
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait"/>
+
         <activity
             android:name=".SplashScreenActivity"
             android:exported="true">
