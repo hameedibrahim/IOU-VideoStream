@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:background="#79000000">
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:layout_alignParentBottom="true">
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+
+            <ImageView
+                android:id="@+id/ivPausePlay"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentStart="true"
+                android:layout_centerHorizontal="true"
+                android:contentDescription="@string/todo"
+                android:src="@drawable/ic_pause_arrow" />
+
+            <TextView
+                android:id="@id/exo_position"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:includeFontPadding="false"
+                android:paddingStart="4dp"
+                android:text="00:00"
+                android:textColor="#FFBEBEBE"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:layout_toEndOf="@id/ivPausePlay"
+                android:layout_centerInParent="true"/>
+
+            <TextView
+                android:id="@+id/tvDivider"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:includeFontPadding="false"
+                android:text="/"
+                android:textColor="#FFBEBEBE"
+                android:textSize="15sp"
+                android:textStyle="bold"
+                android:layout_toEndOf="@id/exo_position"
+                android:layout_centerInParent="true" />
+
+            <TextView
+                android:id="@id/exo_duration"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerInParent="true"
+                android:layout_gravity="center"
+                android:layout_toEndOf="@id/tvDivider"
+                android:includeFontPadding="false"
+                android:text="0:00"
+                android:textColor="#FFBEBEBE"
+                android:textSize="15sp"
+                android:textStyle="bold" />
+
+
+            <ImageView
+                android:id="@+id/ivMenu"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_menu"
+                android:contentDescription="@string/todo"
+                android:layout_alignParentEnd="true"/>
+
+
+            <ImageView
+                android:id="@+id/ivFullScreenMode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_fullscreen"
+                android:contentDescription="@string/todo"
+                android:layout_toStartOf="@id/ivMenu"
+                android:paddingEnd="10dp"
+                tools:ignore="RtlSymmetry" />
+
+
+            <ImageView
+                android:id="@+id/ivVolume"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:src="@drawable/ic_volume_up"
+                android:contentDescription="@string/todo"
+                android:layout_toStartOf="@id/ivFullScreenMode"
+                android:paddingEnd="10dp"
+                tools:ignore="RtlSymmetry" />
+
+
+        </RelativeLayout>
+
+
+
+
+        <com.google.android.exoplayer2.ui.DefaultTimeBar
+            android:id="@id/exo_progress"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="match_parent"
+            android:layout_height="26dp"
+            app:ad_marker_color="#000"
+            app:buffered_color="#3ccccccc"
+            app:played_ad_marker_color="#ccc"
+            app:played_color="#78448aff"
+            app:scrubber_color="#448AFF"
+            app:unplayed_color="#3ccccccc" />
+
+    </LinearLayout>
+
+
+
+</RelativeLayout>
