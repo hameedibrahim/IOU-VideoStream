@@ -5,6 +5,10 @@ import android.annotation.SuppressLint
 import android.app.PictureInPictureParams
 import android.content.pm.ActivityInfo
 import android.content.pm.PackageManager
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.os.Build
 import android.os.Bundle
 import android.view.Gravity
@@ -25,22 +29,25 @@ import com.google.android.exoplayer2.source.hls.HlsMediaSource
 import com.google.android.exoplayer2.ui.StyledPlayerView
 import com.google.android.exoplayer2.upstream.DefaultHttpDataSource
 import com.google.android.exoplayer2.util.Util
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 
 class VideoViewActivity : AppCompatActivity(), Player.Listener{
 
-    private var player: ExoPlayer? = null
+    public var player: ExoPlayer? = null
     private var playbackPosition = 0L
     private var playWhenReady = true
     private val SAMPLE_URL =
         "https://dc5jkysis23ep.cloudfront.net/streams/e9a35b6f9d0bc631f4afd283ff606cbc-6/playlist.m3u8"
-    private lateinit var styledPlayerView : StyledPlayerView
+    public lateinit var styledPlayerView : StyledPlayerView
     private lateinit var ivPausePlay  : ImageView
     private lateinit var ivMuteUnMute : ImageView
     private lateinit var ivFullScreenMode : ImageView
     private lateinit var ivPlayBackMenu : ImageView
     private var isFullScreenMode: Boolean = false
     val speeds = arrayOf(0.25f, 0.5f, 0.75, 1f, 1.25, 1.5f, 2f)
+    private lateinit var connectivityObserver: ConnectivityObserver
+
 
 
     @SuppressLint("MissingInflatedId")
@@ -53,6 +60,40 @@ class VideoViewActivity : AppCompatActivity(), Player.Listener{
         ivFullScreenMode = findViewById(R.id.ivFullScreenMode)
         ivPlayBackMenu = findViewById(R.id.ivMenu)
         clickListener()
+        checkForNetwork()
+    }
+
+    private fun checkForNetwork(){
+        val networkRequest = NetworkRequest.Builder()
+            .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            .addTransportType(NetworkCapabilities.TRANSPORT_WIFI)
+            .addTransportType(NetworkCapabilities.TRANSPORT_CELLULAR)
+            .build()
+        val connectivityManager = getSystemService(ConnectivityManager::class.java) as ConnectivityManager
+        connectivityManager.requestNetwork(networkRequest, networkCallback)
+    }
+
+
+    private val networkCallback = object : ConnectivityManager.NetworkCallback() {
+        // network is available for use
+        override fun onAvailable(network: Network) {
+            super.onAvailable(network)
+            Toast.makeText(this@VideoViewActivity, "Back to online:)", Toast.LENGTH_LONG).show()
+        }
+        // Network capabilities have changed for the network
+        override fun onCapabilitiesChanged(
+            network: Network,
+            networkCapabilities: NetworkCapabilities
+        ) {
+            super.onCapabilitiesChanged(network, networkCapabilities)
+            val unmetered = networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_NOT_METERED)
+        }
+        // lost network connection
+        override fun onLost(network: Network) {
+            super.onLost(network)
+            Toast.makeText(this@VideoViewActivity, "Connection Lost!!!", Toast.LENGTH_LONG).show()
+
+        }
     }
 
 
@@ -129,7 +170,7 @@ class VideoViewActivity : AppCompatActivity(), Player.Listener{
 
 
 
-    private fun initPlayer() {
+    public fun initPlayer() {
         player = ExoPlayer.Builder(this).build()
         player?.playWhenReady = true
         styledPlayerView.player = player
